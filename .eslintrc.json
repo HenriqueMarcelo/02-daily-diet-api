@@ -1,0 +1,10 @@
+{
+    "extends": [
+        "@rocketseat/eslint-config/node"
+    ],
+    "rules": {
+        "no-unused-vars": 1,
+        "prefer-template": 1,
+        "prettier/prettier": 1
+      }
+}
