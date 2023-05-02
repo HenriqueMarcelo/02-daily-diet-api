@@ -20,10 +20,10 @@
 - [ ] O usuário só pode visualizar, editar e apagar as refeições o qual ele criou
 
 
-`npm i -D typescript
+``npm i -D typescript
 npx tsc --init
 npx tsx src/index.ts
 
 npm run migrate-create create-documents
 npm run knex -- migrate:latest
-npm run knex -- migrate:rollback`
+npm run knex -- migrate:rollback``
