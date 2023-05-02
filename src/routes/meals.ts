@@ -2,13 +2,16 @@ import { randomUUID } from 'node:crypto'
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { knex } from '../database'
-// import { checkSessionIdExists } from '../middlewares/check-session-id-exists'
+import {
+  FastifyRequestAuth,
+  checkUserIdExists,
+} from '../middlewares/check-user-id-exists'
 
 export async function mealsRoutes(app: FastifyInstance) {
   app.get(
     '/',
     // {
-    //   preHandler: [checkSessionIdExists],
+    //   preHandler: [checkUserIdExists],
     // },
     async (request) => {
       // const { sessionId } = request.cookies
@@ -25,7 +28,7 @@ export async function mealsRoutes(app: FastifyInstance) {
   app.get(
     '/:id',
     // {
-    //   preHandler: [checkSessionIdExists],
+    //   preHandler: [checkUserIdExists],
     // },
     async (request) => {
       // const { sessionId } = request.cookies
@@ -52,7 +55,7 @@ export async function mealsRoutes(app: FastifyInstance) {
   app.delete(
     '/:id',
     // {
-    //   preHandler: [checkSessionIdExists],
+    //   preHandler: [checkUserIdExists],
     // },
     async (request, response) => {
       // const { sessionId } = request.cookies
@@ -77,7 +80,7 @@ export async function mealsRoutes(app: FastifyInstance) {
   app.put(
     '/:id',
     // {
-    //   preHandler: [checkSessionIdExists],
+    //   preHandler: [checkUserIdExists],
     // },
     async (request, response) => {
       // const { sessionId } = request.cookies
@@ -119,7 +122,7 @@ export async function mealsRoutes(app: FastifyInstance) {
   // app.get(
   //   '/summary',
   //   {
-  //     preHandler: [checkSessionIdExists],
+  //     preHandler: [checkUserIdExists],
   //   },
   //   async (request) => {
   //     const { sessionId } = request.cookies
@@ -135,29 +138,40 @@ export async function mealsRoutes(app: FastifyInstance) {
   //   },
   // )
 
-  app.post('/', async (request, reply) => {
-    const createMealBodySchema = z.object({
-      name: z.string(),
-      description: z.string(),
-      inDiet: z.boolean(),
-      when: z.coerce.date(),
-    })
+  app.post(
+    '/',
+    {
+      preHandler: [checkUserIdExists],
+    },
+    async (request, reply) => {
+      const requestAuth = request as FastifyRequestAuth
+      const user = requestAuth.user
 
-    const { name, description, inDiet, when } = createMealBodySchema.parse(
-      request.body,
-    )
+      const createMealBodySchema = z.object({
+        name: z.string(),
+        description: z.string(),
+        inDiet: z.boolean(),
+        when: z.coerce.date(),
+      })
 
-    const userId = 'a'
+      const { name, description, inDiet, when } = createMealBodySchema.parse(
+        request.body,
+      )
 
-    await knex('meals').insert({
-      id: randomUUID(),
-      name,
-      description,
-      in_diet: inDiet,
-      when: new Date(when).toISOString(),
-      user_id: userId,
-    })
+      const meal = await knex('meals')
+        .insert({
+          id: randomUUID(),
+          name,
+          description,
+          in_diet: inDiet,
+          when: new Date(when).toISOString(),
+          user_id: user.id,
+        })
+        .returning('*')
 
-    reply.status(201).send()
-  })
+      reply.status(201).send({
+        meal,
+      })
+    },
+  )
 }
