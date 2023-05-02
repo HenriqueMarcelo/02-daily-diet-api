@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { knex } from '../database'
-import { checkSessionIdExists } from '../middlewares/check-session-id-exists'
+// import { checkSessionIdExists } from '../middlewares/check-session-id-exists'
 
 export async function mealsRoutes(app: FastifyInstance) {
   app.get(
@@ -46,6 +46,31 @@ export async function mealsRoutes(app: FastifyInstance) {
       return {
         meal,
       }
+    },
+  )
+
+  app.delete(
+    '/:id',
+    // {
+    //   preHandler: [checkSessionIdExists],
+    // },
+    async (request, response) => {
+      // const { sessionId } = request.cookies
+
+      const getMealsParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
+
+      const { id } = getMealsParamsSchema.parse(request.params)
+
+      await knex('meals')
+        .where({
+          id,
+          // , session_id: sessionId
+        })
+        .delete()
+
+      response.status(204)
     },
   )
 
