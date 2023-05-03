@@ -10,14 +10,13 @@ import {
 export async function mealsRoutes(app: FastifyInstance) {
   app.get(
     '/',
-    // {
-    //   preHandler: [checkUserIdExists],
-    // },
+    {
+      preHandler: [checkUserIdExists],
+    },
     async (request) => {
-      // const { sessionId } = request.cookies
-      // const meals = await knex('meals').where('session_id', sessionId).select()
+      const { user } = request as FastifyRequestAuth
 
-      const meals = await knex('meals').select()
+      const meals = await knex('meals').where('user_id', user.id).select()
 
       return {
         meals,
@@ -27,11 +26,11 @@ export async function mealsRoutes(app: FastifyInstance) {
 
   app.get(
     '/:id',
-    // {
-    //   preHandler: [checkUserIdExists],
-    // },
+    {
+      preHandler: [checkUserIdExists],
+    },
     async (request) => {
-      // const { sessionId } = request.cookies
+      const { user } = request as FastifyRequestAuth
 
       const getMealsParamsSchema = z.object({
         id: z.string().uuid(),
@@ -42,7 +41,7 @@ export async function mealsRoutes(app: FastifyInstance) {
       const meal = await knex('meals')
         .where({
           id,
-          // , session_id: sessionId
+          user_id: user.id,
         })
         .first()
 
@@ -54,11 +53,11 @@ export async function mealsRoutes(app: FastifyInstance) {
 
   app.delete(
     '/:id',
-    // {
-    //   preHandler: [checkUserIdExists],
-    // },
+    {
+      preHandler: [checkUserIdExists],
+    },
     async (request, response) => {
-      // const { sessionId } = request.cookies
+      const { user } = request as FastifyRequestAuth
 
       const getMealsParamsSchema = z.object({
         id: z.string().uuid(),
@@ -69,7 +68,7 @@ export async function mealsRoutes(app: FastifyInstance) {
       await knex('meals')
         .where({
           id,
-          // , session_id: sessionId
+          user_id: user.id,
         })
         .delete()
 
@@ -79,11 +78,11 @@ export async function mealsRoutes(app: FastifyInstance) {
 
   app.put(
     '/:id',
-    // {
-    //   preHandler: [checkUserIdExists],
-    // },
+    {
+      preHandler: [checkUserIdExists],
+    },
     async (request, response) => {
-      // const { sessionId } = request.cookies
+      const { user } = request as FastifyRequestAuth
 
       const createMealBodySchema = z.object({
         name: z.string(),
@@ -102,20 +101,22 @@ export async function mealsRoutes(app: FastifyInstance) {
 
       const { id } = getMealsParamsSchema.parse(request.params)
 
-      await knex('meals')
+      const meals = await knex('meals')
         .where({
           id,
-          // , session_id: sessionId
+          user_id: user.id,
         })
         .update({
           name,
           description,
           in_diet: inDiet,
           when: new Date(when).toISOString(),
-          // user_id: userId,
         })
+        .returning('*')
 
-      response.status(204)
+      response.status(202).send({
+        meal: meals[0],
+      })
     },
   )
 
@@ -144,8 +145,7 @@ export async function mealsRoutes(app: FastifyInstance) {
       preHandler: [checkUserIdExists],
     },
     async (request, reply) => {
-      const requestAuth = request as FastifyRequestAuth
-      const user = requestAuth.user
+      const { user } = request as FastifyRequestAuth
 
       const createMealBodySchema = z.object({
         name: z.string(),
