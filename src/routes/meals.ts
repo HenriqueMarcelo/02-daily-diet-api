@@ -120,25 +120,6 @@ export async function mealsRoutes(app: FastifyInstance) {
     },
   )
 
-  // app.get(
-  //   '/summary',
-  //   {
-  //     preHandler: [checkUserIdExists],
-  //   },
-  //   async (request) => {
-  //     const { sessionId } = request.cookies
-
-  //     const summary = await knex('meals')
-  //       .where('session_id', sessionId)
-  //       .sum('amount', {
-  //         as: 'amount',
-  //       })
-  //       .first()
-
-  //     return { summary }
-  //   },
-  // )
-
   app.post(
     '/',
     {
@@ -172,6 +153,36 @@ export async function mealsRoutes(app: FastifyInstance) {
       reply.status(201).send({
         meal,
       })
+    },
+  )
+
+  app.get(
+    '/summary',
+    {
+      preHandler: [checkUserIdExists],
+    },
+    async (request) => {
+      const { user } = request as FastifyRequestAuth
+
+      const counters = await knex('meals')
+        .count('*', {
+          as: 'total',
+        })
+        .sum('in_diet', {
+          as: 'inDiet',
+        })
+        .where({
+          user_id: user.id,
+        })
+        .first()
+
+      return {
+        summary: {
+          inDiet: counters?.inDiet,
+          notDiet: Number(counters?.total) - counters?.inDiet,
+          total: counters?.total,
+        },
+      }
     },
   )
 }
